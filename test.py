@@ -8,7 +8,7 @@ def main():
     #search_string = input("What word are you looking for? :")
     search_string = "klima"
     print(url)
-    r: int = requests.get(url)
+    r = requests.get(url)
     if r.status_code != 200:
         raise ValueError
     soup = BeautifulSoup(r.text, 'html.parser')
@@ -24,7 +24,7 @@ def main():
     #print(category.links)
     #for _ in category.links:
     #    print(_)
-    
+
     """
     # Links
     links = soup.find_all("a", class_="teaser__link")
@@ -49,7 +49,7 @@ def main():
             counter.append(1)
             print(teaser)
         else:
-            counter.append(0)   
+            counter.append(0)
     #for count in counter:
     #    print(count)
     #for author in authors:
@@ -65,13 +65,13 @@ def main():
     for _ in sub_p:
         print(_.name)
     #print(sub_p)
-    
+
     #for _ in links:
     #    print(_.get('href'))
 
     # Teaser
-    
-    
+
+
     # das funktioniert!
     for _ in links:
         p = _.find('p')
@@ -95,7 +95,7 @@ def main():
 
 class ScrapeCategory():
     def __init__(self, soup, search_string) -> None:
-        self.soup = soup 
+        self.soup = soup
         self.search_string = search_string
         self.raw_articles = self.get_articles()
         self.n_articles = len(self.raw_articles)
@@ -118,10 +118,10 @@ class ScrapeCategory():
             if teaser["search_string_found"] == True:
                 self.counter += 1
         #print(self.raw_articles[0].prettify())
-        
-        
-        
-        
+
+
+
+
         # für jeden Artikel willst du ein Dict!
         """
         self.links = self.get_links()
@@ -134,10 +134,10 @@ class ScrapeCategory():
 
     def __str__(self):
         return f"The category has {self.n_articles} articles in which the search string was found {self.counter} times."
-    
+
     def get_articles(self):
         return self.soup.find_all("a", class_="teaser__link")
-    
+
 
     def get_topline(self, article):
         topline = article.find('span', {'class': 'teaser__topline'})
