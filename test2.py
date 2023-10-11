@@ -150,7 +150,7 @@ class ScrapeArticle():
         # Input
         self.url = url
         self.search_string = search_string
-        # Scrape article
+        # Raw HTML
         #self.content
         # Analysis of article
         #self.word_count
