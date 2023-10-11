@@ -19,10 +19,10 @@ def main():
         raise ValueError
     soup = BeautifulSoup(r.text, 'html.parser')
 
-    # Running Scraper
+    # Running archiveScraper
     archive = ScrapeArchive(soup, datum, search_string)
 
-    # Print results
+    # Print archiveScraper results
 
     for teaser in archive.teaser_list:
         if teaser["string_found"] == True:
@@ -32,6 +32,35 @@ def main():
             print(teaser["datetime"])
 
     print(archive)
+
+
+    # Using articleScraper
+    for teaser in archive.teaser_list[:1]:
+        article_url = teaser["link"]
+        a = requests.get(article_url)
+        soup = BeautifulSoup(a.text, 'html.parser')
+        article = ScrapeArticle(article_url, soup, search_string)
+        #print(article.raw_article.prettify())
+
+        
+
+class ScrapeArticle():
+    def __init__(self, url, soup, search_string):
+        # Input
+        self.url = url
+        self.soup = soup
+        self.search_string = search_string
+        # Raw HTML
+        self.raw_article = self.soup.find('article')
+        
+        #self.content
+        # Analysis of article
+        #self.word_count
+        #self.match_search_string_counter
+
+    
+    def __str__(self):
+        return f"This is link {self.url} and search_string {self.search_string}"
 
 
 class ScrapeArchive():
@@ -143,19 +172,6 @@ class ScrapeArchive():
             return None
         else:
             return datetime_raw.text
-
-
-class ScrapeArticle():
-    def __init__(self, url, search_string):
-        # Input
-        self.url = url
-        self.search_string = search_string
-        # Raw HTML
-        #self.content
-        # Analysis of article
-        #self.word_count
-        #self.match_search_string_counter
-
 
 
 if __name__ == "__main__":
