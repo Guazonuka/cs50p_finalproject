@@ -5,12 +5,13 @@ from bs4 import BeautifulSoup
 
 def main():
     # Url
-    archiv_url = "https://www.tagesschau.de/archiv?datum="
-    datum = "2023-10-09"
-    url = archiv_url+datum
+    archiv_url = "https://www.tagesschau.de/archiv"
+    url_extention = "?datum="
+    datum = "2023-10-06"
+    url = archiv_url+url_extention+datum
 
     # Search string
-    search_string = "kanzler"
+    search_string = "klima"
 
     # Request url and get soup
     r = requests.get(url)
@@ -22,10 +23,15 @@ def main():
     archive = ScrapeArchive(soup, datum, search_string)
 
     # Print results
+
     for teaser in archive.teaser_list:
         if teaser["string_found"] == True:
             print("+++")
             print(teaser["topline"])
+            print(teaser["link"])
+            print(teaser["datetime"])
+
+    print(archive)
 
 
 class ScrapeArchive():
@@ -41,7 +47,13 @@ class ScrapeArchive():
         self.teaser_list = []
         for teaser in self.raw_teasers:
             self.teaser_list.append(self.scrape_teaser(teaser))
+        self.teaser_counter = len(self.teaser_list)
+        self.match_search_string_counter = 0
         self.match_search_string()
+
+
+    def __str__(self):
+        return f"Found teasers in archive page for {self.date}: {self.teaser_counter}\nFound string matches in archive page: {self.match_search_string_counter}"
 
 
     def get_main_content(self):
@@ -54,7 +66,7 @@ class ScrapeArchive():
 
     def scrape_teaser(self, teaser):
         teaser_dict = {
-            "link": teaser.get('href'),
+            "link": self.get_link(teaser),
             "topline_label": self.get_topline_label(teaser),
             "topline": self.get_topline(teaser),
             "headline": self.get_headline(teaser),
@@ -75,8 +87,17 @@ class ScrapeArchive():
             for category in dict_categories:
                 if self.search_string in teaser[category].lower():
                     teaser["string_found"] = True
+                    self.match_search_string_counter += 1
                     break
                 teaser["string_found"] = False
+
+
+    def get_link(self, teaser):
+        link = teaser.get('href')
+        if not link.startswith("https://www.tagesschau.de"):
+            return "https://www.tagesschau.de"+link
+        else:
+            return link
 
 
     def get_topline_label(self, teaser):
