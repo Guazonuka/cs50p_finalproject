@@ -10,7 +10,7 @@ def main():
     url = archiv_url+datum
 
     # Search string
-    search_string = "klima"
+    search_string = "kanzler"
 
     # Request url and get soup
     r = requests.get(url)
@@ -21,16 +21,11 @@ def main():
     # Running Scraper
     archive = ScrapeArchive(soup, datum, search_string)
 
-    #print(archive.raw_teasers[4].prettify())
-
-
+    # Print results
     for teaser in archive.teaser_list:
-        print("++++++++++")
-        print(teaser["topline"])
-        print(teaser["datetime"])
-        #for line in teaser:
-        #    print(f"{line}: {teaser[line]}")
-
+        if teaser["string_found"] == True:
+            print("+++")
+            print(teaser["topline"])
 
 
 class ScrapeArchive():
@@ -45,7 +40,8 @@ class ScrapeArchive():
         # Create and analyse list of teasers
         self.teaser_list = []
         for teaser in self.raw_teasers:
-            self.teaser_list.append(self.analyze_teaser(teaser))
+            self.teaser_list.append(self.scrape_teaser(teaser))
+        self.match_search_string()
 
 
     def get_main_content(self):
@@ -56,7 +52,7 @@ class ScrapeArchive():
         return self.main_content.find_all('a')
 
 
-    def analyze_teaser(self, teaser):
+    def scrape_teaser(self, teaser):
         teaser_dict = {
             "link": teaser.get('href'),
             "topline_label": self.get_topline_label(teaser),
@@ -64,12 +60,27 @@ class ScrapeArchive():
             "headline": self.get_headline(teaser),
             "shorttext": self.get_shorttext(teaser),
             "datetime": self.get_datetime(teaser),
+            "date": self.date,
         }
         return teaser_dict
 
 
+    def match_search_string(self):
+        dict_categories = [
+            "topline",
+            "headline",
+            "shorttext",
+        ]
+        for teaser in self.teaser_list:
+            for category in dict_categories:
+                if self.search_string in teaser[category].lower():
+                    teaser["string_found"] = True
+                    break
+                teaser["string_found"] = False
+
+
     def get_topline_label(self, teaser):
-        #topline_label_raw = teaser.find('span', class_='label label--small')
+        # find span-tag in which class entails 'label--small'
         topline_label_raw = teaser.find('span', class_=re.compile('label--small'))
         if topline_label_raw == None:
             return None
@@ -95,6 +106,7 @@ class ScrapeArchive():
 
     def get_shorttext(self, teaser):
         shorttext_raw = teaser.find('p', class_='teaser-right__shorttext')
+        # typical tags: 'span' => 'link-extend' and 'em' => 'author'
         dismiss_elements = shorttext_raw.find_all()
         for dismiss_element in dismiss_elements:
             dismiss_element.decompose()
