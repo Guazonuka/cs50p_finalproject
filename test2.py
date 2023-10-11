@@ -145,5 +145,18 @@ class ScrapeArchive():
             return datetime_raw.text
 
 
+class ScrapeArticle():
+    def __init__(self, url, search_string):
+        # Input
+        self.url = url
+        self.search_string = search_string
+        # Scrape article
+        #self.content
+        # Analysis of article
+        #self.word_count
+        #self.match_search_string_counter
+
+
+
 if __name__ == "__main__":
     main()
