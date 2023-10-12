@@ -46,6 +46,8 @@ def main():
         if article.article_analysis["match_search_string_counter"] > 0:
             print("+++")
             print(article.article_dict["topline"])
+            print(article.article_dict["headline"])
+            print(article.article_dict["datetime"])
             print(article.article_dict["link"])
             print(article.article_dict["tags"])
             print(article)
@@ -138,7 +140,7 @@ class ScrapeArticle():
         if datetime_raw == None:
             return None
         else:
-            return datetime_raw.text.strip("Stand: ")
+            return datetime_raw.text.strip("Stand: ").strip(" Uhr")
 
 
     def get_subheadlines(self):
