@@ -113,8 +113,6 @@ class ScrapeArticle():
         for _ in self.article_dict["paragraphs"]:
             if self.search_string in _.lower():
                 counter += _.lower().count(self.search_string)
-            #for self.search_string in _.lower():
-            #    counter += 1
         return counter
 
 
