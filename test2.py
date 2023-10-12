@@ -7,7 +7,7 @@ def main():
     # Url
     archiv_url = "https://www.tagesschau.de/archiv"
     url_extention = "?datum="
-    datum = "2023-10-06"
+    datum = "2023-08-09"
     url = archiv_url+url_extention+datum
 
     # Search string
@@ -23,26 +23,34 @@ def main():
     archive = ScrapeArchive(soup, datum, search_string)
 
     # Print archiveScraper results
-
+    """
     for teaser in archive.teaser_list:
         if teaser["string_found"] == True:
             print("+++")
             print(teaser["topline"])
             print(teaser["link"])
             print(teaser["datetime"])
-
-    print(archive)
+    """
+    #print(archive)
 
 
     # Using articleScraper
-    for teaser in archive.teaser_list[:1]:
+    for teaser in archive.teaser_list[0:10]:
         article_url = teaser["link"]
         a = requests.get(article_url)
         soup = BeautifulSoup(a.text, 'html.parser')
         article = ScrapeArticle(article_url, soup, search_string)
-        #print(article.raw_article.prettify())
 
-        
+
+        #print(article.article_dict["subheadlines"])
+        if article.article_analysis["match_search_string_counter"] > 0:
+            print("+++")
+            print(article.article_dict["topline"])
+            print(article.article_dict["link"])
+            print(article)
+    print("+++")
+
+
 
 class ScrapeArticle():
     def __init__(self, url, soup, search_string):
@@ -52,15 +60,104 @@ class ScrapeArticle():
         self.search_string = search_string
         # Raw HTML
         self.raw_article = self.soup.find('article')
-        
-        #self.content
+        self.article_dict = {
+            "link": self.url,
+            "topline_label": self.get_topline_label(),
+            "topline": self.raw_article.find('span', class_='seitenkopf__topline').text,
+            "headline": self.raw_article.find('span', class_='seitenkopf__headline--text').text,
+            "shorttext": self.get_shorttext(),
+            "datetime": self.get_datetime(),
+            "author": "",
+            "subheadlines": self.get_subheadlines(),
+            "paragraphs": self.get_paragraphs(),
+        }
         # Analysis of article
-        #self.word_count
-        #self.match_search_string_counter
+        self.article_analysis = {
+            "word_count": self.word_count(),
+            "match_search_string_counter": self.match_search_string_counter(),
+        }
 
-    
+
     def __str__(self):
-        return f"This is link {self.url} and search_string {self.search_string}"
+        return f"The article consists of {self.article_analysis['word_count']} words and {self.article_analysis['match_search_string_counter']} search_string matches"
+
+
+    def word_count(self):
+        counter = 0
+        for _ in self.article_dict["topline"]:
+            counter += len(_.split())
+        for _ in self.article_dict["headline"]:
+            counter += len(_.split())
+        for _ in self.article_dict["subheadlines"]:
+            counter += len(_.split())
+        for _ in self.article_dict["paragraphs"]:
+            counter += len(_.split())
+        return counter
+
+
+
+    def match_search_string_counter(self):
+        counter = 0
+        if self.search_string in self.article_dict["topline"].lower():
+            counter += self.article_dict["topline"].lower().count(self.search_string)
+        if self.search_string in self.article_dict["headline"].lower():
+            counter += self.article_dict["headline"].lower().count(self.search_string)
+        for _ in self.article_dict["subheadlines"]:
+            if self.search_string in _.lower():
+                counter += _.lower().count(self.search_string)
+        for _ in self.article_dict["paragraphs"]:
+            if self.search_string in _.lower():
+                counter += _.lower().count(self.search_string)
+            #for self.search_string in _.lower():
+            #    counter += 1
+        return counter
+
+
+    def get_topline_label(self):
+        # find span-tag in which class entails 'label--small'
+        topline_label_raw = self.raw_article.find('span', class_=re.compile('label--small'))
+        if topline_label_raw == None:
+            return None
+        else:
+            return topline_label_raw.strong.text
+
+
+    def get_shorttext(self):
+        shorttext_raw = self.raw_article.find('p', class_=re.compile('^textabsatz'))
+        if shorttext_raw == None:
+            return None
+        else:
+            return shorttext_raw.strong.text
+
+
+    def get_datetime(self):
+        datetime_raw = self.raw_article.find('p', class_='metatextline')
+        if datetime_raw == None:
+            return None
+        else:
+            return datetime_raw.text.strip("Stand: ")
+
+
+    def get_subheadlines(self):
+        subheadlines_raw = self.raw_article.find_all('h2')
+        subheadlines_list = []
+        if subheadlines_raw == None:
+            return None
+        else:
+            for subheadline in subheadlines_raw:
+                subheadlines_list.append(subheadline.text)
+            return subheadlines_list
+
+
+    def get_paragraphs(self):
+        paragraphs_raw = self.raw_article.find_all('p', class_=re.compile('^textabsatz'))
+        paragraphs_list = []
+        if paragraphs_raw == None:
+            return None
+        else:
+            for paragraph in paragraphs_raw:
+                paragraphs_list.append(paragraph.text)
+            return paragraphs_list
 
 
 class ScrapeArchive():
