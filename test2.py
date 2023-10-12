@@ -5,22 +5,22 @@ from bs4 import BeautifulSoup
 
 def main():
     # Url
-    archiv_url = "https://www.tagesschau.de/archiv"
+    archive_url = "https://www.tagesschau.de/archiv"
     url_extention = "?datum="
-    datum = "2023-08-09"
-    url = archiv_url+url_extention+datum
+    date = "2023-08-09"
+    url = archive_url+url_extention+date
 
     # Search string
     search_string = "klima"
 
-    # Request url and get soup
+    # Request url and get bs4soup
     r = requests.get(url)
     if r.status_code != 200:
         raise ValueError
     soup = BeautifulSoup(r.text, 'html.parser')
 
     # Running archiveScraper
-    archive = ScrapeArchive(soup, datum, search_string)
+    archive = ScrapeArchive(soup, date, search_string)
 
     # Print archiveScraper results
     """
@@ -47,6 +47,7 @@ def main():
             print("+++")
             print(article.article_dict["topline"])
             print(article.article_dict["link"])
+            print(article.article_dict["tags"])
             print(article)
     print("+++")
 
@@ -70,6 +71,8 @@ class ScrapeArticle():
             "author": "",
             "subheadlines": self.get_subheadlines(),
             "paragraphs": self.get_paragraphs(),
+            "tags": self.get_tags(),
+            "hash": "",
         }
         # Analysis of article
         self.article_analysis = {
@@ -160,11 +163,23 @@ class ScrapeArticle():
             return paragraphs_list
 
 
+    def get_tags(self):
+        taglist_raw = self.raw_article.find('ul', class_='taglist')
+        tag_link_list_raw = taglist_raw.find_all('a')
+        tags_list = []
+        if tag_link_list_raw == None:
+            return None
+        else:
+            for tag in tag_link_list_raw:
+                tags_list.append(tag.text.strip())
+            return tags_list
+
+
 class ScrapeArchive():
-    def __init__(self, soup, datum, search_string):
+    def __init__(self, soup, date, search_string):
         # Input
         self.soup = soup
-        self.date = datum
+        self.date = date
         self.search_string = search_string
         # Raw HTML
         self.main_content = self.get_main_content()
