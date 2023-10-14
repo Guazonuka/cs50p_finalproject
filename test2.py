@@ -1,5 +1,7 @@
 import requests
 import re
+from datetime import datetime as dt
+import time
 
 from bs4 import BeautifulSoup
 
@@ -23,17 +25,17 @@ def main():
     archive = ScrapeArchive(soup, date, search_string)
 
     # Print archiveScraper results
-    """
+    
     for teaser in archive.teaser_list:
         if teaser["string_found"] == True:
             print("+++")
             print(teaser["topline"])
             print(teaser["link"])
             print(teaser["datetime"])
-    """
+            print(type(teaser["datetime"]))
     #print(archive)
 
-
+    """
     # Using articleScraper
     for teaser in archive.teaser_list[0:10]:
         article_url = teaser["link"]
@@ -50,7 +52,11 @@ def main():
             print(article.article_dict["datetime"])
             print(article.article_dict["link"])
             print(article.article_dict["tags"])
+            print(type(article.article_dict["datetime"]))
             print(article)
+        # insert delay for article scraping
+        time.sleep(1)
+    """
     print("+++")
 
 
@@ -138,7 +144,9 @@ class ScrapeArticle():
         if datetime_raw == None:
             return None
         else:
-            return datetime_raw.text.strip("Stand: ").strip(" Uhr")
+            datetime_str = datetime_raw.text.strip("Stand: ").strip(" Uhr")
+            datetime = dt.strptime(datetime_str, "%d.%m.%Y %H:%M")
+            return datetime
 
 
     def get_subheadlines(self):
@@ -283,7 +291,9 @@ class ScrapeArchive():
         if datetime_raw == None:
             return None
         else:
-            return datetime_raw.text
+            datetime_str = datetime_raw.text.strip(" Uhr")
+            datetime = dt.strptime(datetime_str, "%d.%m.%Y • %H:%M")
+            return datetime
 
 
 if __name__ == "__main__":
