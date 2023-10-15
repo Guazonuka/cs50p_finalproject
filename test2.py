@@ -1,9 +1,14 @@
+import pandas as pd
 import requests
 import re
-from datetime import datetime as dt
+import sqlite3
 import time
 
 from bs4 import BeautifulSoup
+from datetime import datetime as dt
+
+
+
 
 def main():
     # Url
@@ -24,6 +29,10 @@ def main():
     # Running archiveScraper
     archive = ScrapeArchive(soup, date, search_string)
 
+    # Implementing Sqlite3
+    con = sqlite3.connect("tagesschau.db")
+    db = con.cursor()
+
     # Print archiveScraper results
     
     for teaser in archive.teaser_list:
@@ -34,16 +43,38 @@ def main():
             print(teaser["datetime"])
             print(type(teaser["datetime"]))
     #print(archive)
-
-    """
+    
+    
     # Using articleScraper
     for teaser in archive.teaser_list[0:10]:
         article_url = teaser["link"]
         a = requests.get(article_url)
         soup = BeautifulSoup(a.text, 'html.parser')
         article = ScrapeArticle(article_url, soup, search_string)
+        #db.execute("INSERT INTO articles_short(word_count) VALUES (?);", [article.article_analysis["word_count"]])
+        db_row = [
+            article.article_dict["link"],
+            article.article_dict["topline_label"],
+            article.article_dict["topline"],
+            article.article_dict["headline"],
+            article.article_dict["shorttext"],
+            article.article_dict["datetime"],
+            article.article_dict["tags"],
+            article.article_analysis["word_count"],
+            article.article_analysis["match_search_string_counter"],
+        ]
+        #db.execute("INSERT INTO articles_short (url, topline_label, topline, headline, shorttext, datetime, tags, word_count, matches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);", [article.article_dict["link"]], [article.article_dict["topline_label"]], [article.article_dict["topline"]], [article.article_dict["headline"]], [article.article_dict["shorttext"]], [article.article_dict["datetime"]], [article.article_dict["tags"]], [article.article_analysis["word_count"]], [article.article_analysis["match_search_string_counter"]])
+        db.execute("INSERT INTO test_1 (url, word_count, matches) VALUES (?, ?, ?);", (article.article_dict["link"], article.article_analysis["word_count"], article.article_analysis["match_search_string_counter"]))
+        con.commit()
+        time.sleep(1)
 
-
+        """
+        for s in article.article_dict:
+            print(s, type(article.article_dict[s]))
+        for s in article.article_analysis:
+            print(s, type(article.article_analysis[s]))
+        """
+        """
         #print(article.article_dict["subheadlines"])
         if article.article_analysis["match_search_string_counter"] > 0:
             print("+++")
@@ -53,11 +84,26 @@ def main():
             print(article.article_dict["link"])
             print(article.article_dict["tags"])
             print(type(article.article_dict["datetime"]))
+            print(article.article_analysis["word_count"])
+            print(type(article.article_analysis["word_count"]))
             print(article)
         # insert delay for article scraping
-        time.sleep(1)
-    """
-    print("+++")
+        """
+    con.close()
+    #print("+++")
+
+    # Using pandas to create dataframe
+    #pd.set_option('display.max_columns', 1000)
+    df = pd.DataFrame(archive.teaser_list)
+    filt = df["string_found"] == False
+    #print(df.loc[filt][["topline", "headline", "string_found"]])
+    #print(df.shape)
+    #print(df.head())
+    #print(df.columns)
+    #print(df[["topline_label", "headline", "datetime"]].head(20))
+    #print(df.loc[0, "shorttext"])
+
+
 
 
 
