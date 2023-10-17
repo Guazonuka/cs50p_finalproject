@@ -63,9 +63,20 @@ def main():
             article.article_analysis["word_count"],
             article.article_analysis["match_search_string_counter"],
         ]
-        #db.execute("INSERT INTO articles_short (url, topline_label, topline, headline, shorttext, datetime, tags, word_count, matches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);", [article.article_dict["link"]], [article.article_dict["topline_label"]], [article.article_dict["topline"]], [article.article_dict["headline"]], [article.article_dict["shorttext"]], [article.article_dict["datetime"]], [article.article_dict["tags"]], [article.article_analysis["word_count"]], [article.article_analysis["match_search_string_counter"]])
-        db.execute("INSERT INTO test_1 (url, word_count, matches) VALUES (?, ?, ?);", (article.article_dict["link"], article.article_analysis["word_count"], article.article_analysis["match_search_string_counter"]))
+        
+        # Creation of archive table
+        #CREATE TABLE IF NOT EXISTS articles_short (url VARCHAR, topline_label TEXT, topline TEXT, headline TEXT, shorttext TEXT, datetime NUMERIC, tags TEXT, word_count INTEGER, matches INTEGER);
+        
+        # Insertion into archive table
+        db.execute("INSERT INTO articles_short (url, topline_label, topline, headline, shorttext, datetime, tags, word_count, matches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);", (article.article_dict["link"], article.article_dict["topline_label"], article.article_dict["topline"], article.article_dict["headline"], article.article_dict["shorttext"], article.article_dict["datetime"], ', '.join(article.article_dict["tags"]), article.article_analysis["word_count"], article.article_analysis["match_search_string_counter"]))
+        
+        # insertion in test table
+        #db.execute("INSERT INTO test_1 (url, word_count, matches) VALUES (?, ?, ?);", (article.article_dict["link"], article.article_analysis["word_count"], article.article_analysis["match_search_string_counter"]))
+        
+        # commit changes to db
         con.commit()
+
+        # sleep counter of 1 second
         time.sleep(1)
 
         """
@@ -89,6 +100,8 @@ def main():
             print(article)
         # insert delay for article scraping
         """
+    
+    # closure of db
     con.close()
     #print("+++")
 
