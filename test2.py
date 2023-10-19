@@ -8,13 +8,11 @@ from bs4 import BeautifulSoup
 from datetime import datetime as dt
 
 
-
-
 def main():
     # Url
     archive_url = "https://www.tagesschau.de/archiv"
     url_extention = "?datum="
-    date = "2023-08-09"
+    date = "2023-08-06"
     url = archive_url+url_extention+date
 
     # Search string
@@ -46,11 +44,13 @@ def main():
 
 
     # Using articleScraper
-    for teaser in archive.teaser_list[0:10]:
+    for teaser in archive.teaser_list[0:20]:
         article_url = teaser["link"]
         a = requests.get(article_url)
         soup = BeautifulSoup(a.text, 'html.parser')
         article = ScrapeArticle(article_url, soup, search_string)
+        print(article.article_dict["scraped_dt"])
+        print(article.article_dict["author"])
         #db.execute("INSERT INTO articles_short(word_count) VALUES (?);", [article.article_analysis["word_count"]])
         db_row = [
             article.article_dict["link"],
@@ -59,26 +59,60 @@ def main():
             article.article_dict["headline"],
             article.article_dict["shorttext"],
             article.article_dict["datetime"],
-            article.article_dict["tags"],
+            article.article_dict["author"],
+            ', '.join(article.article_dict["tags"]),
             article.article_analysis["word_count"],
             article.article_analysis["match_search_string_counter"],
+            article.article_dict["scraped_dt"],
+            article.article_dict["department"],
+            ', '.join(article.article_dict["categories"]),
         ]
 
+        article_row = [
+            article.article_dict["link"],
+            ' | '.join(article.article_dict["subheadlines"]),
+        ]
+        print(article_row[1])
+
+        """
+        self.article_dict = {
+            "link": self.url,
+            "topline_label": self.get_topline_label(),
+            "topline": self.raw_article.find('span', class_='seitenkopf__topline').text,
+            "headline": self.raw_article.find('span', class_='seitenkopf__headline--text').text,
+            "shorttext": self.get_shorttext(),
+            "datetime": self.get_datetime(),
+            "author": "",
+            "subheadlines": self.get_subheadlines(),
+            "paragraphs": self.get_paragraphs(),
+            "tags": self.get_tags(),
+            "hash": "",
+        }
+        """
+        
         # Creation of archive table
         #CREATE TABLE IF NOT EXISTS articles_short (url VARCHAR, topline_label TEXT, topline TEXT, headline TEXT, shorttext TEXT, datetime NUMERIC, tags TEXT, word_count INTEGER, matches INTEGER);
 
         # Insertion into archive table
         #db.execute("INSERT INTO articles_short (url, topline_label, topline, headline, shorttext, datetime, tags, word_count, matches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);", (article.article_dict["link"], article.article_dict["topline_label"], article.article_dict["topline"], article.article_dict["headline"], article.article_dict["shorttext"], article.article_dict["datetime"], ', '.join(article.article_dict["tags"]), article.article_analysis["word_count"], article.article_analysis["match_search_string_counter"]))
 
+
+        # create table test_1
+        #CREATE TABLE test_1 (url VARCHAR, word_count INTEGER, matches INTEGER);
+        
         # insertion in test table
         #db.execute("INSERT INTO test_1 (url, word_count, matches) VALUES (?, ?, ?);", (article.article_dict["link"], article.article_analysis["word_count"], article.article_analysis["match_search_string_counter"]))
 
-        # create test table_2
-        #CREATE TABLE IF NOT EXISTS test_2 (url VARCHAR PRIMARY KEY NOT NULL, topline_label TEXT, topline TEXT, headline TEXT, shorttext TEXT, datetime NUMERIC, tags TEXT, word_count INTEGER, matches INTEGER);
 
-        # insertion in test table_2
+        # create table test_3
+        #CREATE TABLE IF NOT EXISTS test_3 (url VARCHAR PRIMARY KEY NOT NULL, topline_label TEXT, topline TEXT, headline TEXT, shorttext TEXT, datetime NUMERIC, author TEXT, tags TEXT, word_count INTEGER, matches INTEGER, scraped_dt NUMERIC, department TEXT, categories TEXT);
+
+        # insertion in test table_3
         try:
-            db.execute("INSERT INTO test_2 (url, topline_label, topline, headline, shorttext, datetime, tags, word_count, matches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);", (article.article_dict["link"], article.article_dict["topline_label"], article.article_dict["topline"], article.article_dict["headline"], article.article_dict["shorttext"], article.article_dict["datetime"], ', '.join(article.article_dict["tags"]), article.article_analysis["word_count"], article.article_analysis["match_search_string_counter"]))
+            # Old version
+            #db.execute("INSERT INTO test_2 (url, topline_label, topline, headline, shorttext, datetime, tags, word_count, matches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);", (article.article_dict["link"], article.article_dict["topline_label"], article.article_dict["topline"], article.article_dict["headline"], article.article_dict["shorttext"], article.article_dict["datetime"], ', '.join(article.article_dict["tags"]), article.article_analysis["word_count"], article.article_analysis["match_search_string_counter"]))
+            # this works!
+            db.execute("INSERT INTO test_3 (url, topline_label, topline, headline, shorttext, datetime, author, tags, word_count, matches, scraped_dt, department, categories) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", (db_row))
         except sqlite3.IntegrityError:
             print(f"The following URL is already in the database and will be skipped: {article.article_dict['link']}")
             continue
@@ -145,11 +179,14 @@ class ScrapeArticle():
             "headline": self.raw_article.find('span', class_='seitenkopf__headline--text').text,
             "shorttext": self.get_shorttext(),
             "datetime": self.get_datetime(),
-            "author": "",
+            "author": self.get_author(),
             "subheadlines": self.get_subheadlines(),
             "paragraphs": self.get_paragraphs(),
             "tags": self.get_tags(),
             "hash": "",
+            "scraped_dt": self.get_scraped_dt(),
+            "department": self.url.replace("https://www.tagesschau.de/", "").split("/")[0],
+            "categories": self.url.replace("https://www.tagesschau.de/", "").split("/")[1:-1],
         }
         # Analysis of article
         self.article_analysis = {
@@ -173,7 +210,6 @@ class ScrapeArticle():
         for _ in self.article_dict["paragraphs"]:
             counter += len(_.split())
         return counter
-
 
 
     def match_search_string_counter(self):
@@ -218,6 +254,14 @@ class ScrapeArticle():
             return datetime
 
 
+    def get_author(self):
+        author_raw = self.raw_article.find('div', class_='authorline__author')
+        if author_raw == None:
+            return None
+        else:
+            return author_raw.find('a').text
+        
+
     def get_subheadlines(self):
         subheadlines_raw = self.raw_article.find_all('h2')
         subheadlines_list = []
@@ -250,6 +294,11 @@ class ScrapeArticle():
             for tag in tag_link_list_raw:
                 tags_list.append(tag.text.strip())
             return tags_list
+        
+    
+    def get_scraped_dt(self):
+        return dt.now().strftime('%Y-%m-%d %H:%M:%S')
+
 
 
 class ScrapeArchive():
@@ -362,7 +411,7 @@ class ScrapeArchive():
         else:
             datetime_str = datetime_raw.text.strip(" Uhr")
             datetime = dt.strptime(datetime_str, "%d.%m.%Y • %H:%M")
-            return datetime
+            return datetime  
 
 
 if __name__ == "__main__":
