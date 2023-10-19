@@ -32,7 +32,7 @@ def main():
     db = con.cursor()
 
     # Print archiveScraper results
-
+    """
     for teaser in archive.teaser_list:
         if teaser["string_found"] == True:
             print("+++")
@@ -41,7 +41,7 @@ def main():
             print(teaser["datetime"])
             print(type(teaser["datetime"]))
     #print(archive)
-
+    """
 
     # Using articleScraper
     for teaser in archive.teaser_list[0:20]:
@@ -49,8 +49,8 @@ def main():
         a = requests.get(article_url)
         soup = BeautifulSoup(a.text, 'html.parser')
         article = ScrapeArticle(article_url, soup, search_string)
-        print(article.article_dict["scraped_dt"])
-        print(article.article_dict["author"])
+        #print(article.article_dict["scraped_dt"])
+        #print(article.article_dict["author"])
         #db.execute("INSERT INTO articles_short(word_count) VALUES (?);", [article.article_analysis["word_count"]])
         db_row = [
             article.article_dict["link"],
@@ -68,11 +68,14 @@ def main():
             ', '.join(article.article_dict["categories"]),
         ]
 
-        article_row = [
+        article_content_row = [
             article.article_dict["link"],
             ' | '.join(article.article_dict["subheadlines"]),
+            ' '.join(article.article_dict["paragraphs"]),
+            article.article_dict["scraped_dt"],
         ]
-        print(article_row[1])
+        #print(article_content_row[0])
+        #print(article_content_row[2])
 
         """
         self.article_dict = {
@@ -107,7 +110,12 @@ def main():
         # create table test_3
         #CREATE TABLE IF NOT EXISTS test_3 (url VARCHAR PRIMARY KEY NOT NULL, topline_label TEXT, topline TEXT, headline TEXT, shorttext TEXT, datetime NUMERIC, author TEXT, tags TEXT, word_count INTEGER, matches INTEGER, scraped_dt NUMERIC, department TEXT, categories TEXT);
 
+        # create table test_4
+        #CREATE TABLE IF NOT EXISTS test_4 (url VARCHAR PRIMARY KEY NOT NULL, subheadlines TEXT, paragraphs TEXT, scraped_dt NUMERIC);
+
         # insertion in test table_3
+        
+        
         try:
             # Old version
             #db.execute("INSERT INTO test_2 (url, topline_label, topline, headline, shorttext, datetime, tags, word_count, matches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);", (article.article_dict["link"], article.article_dict["topline_label"], article.article_dict["topline"], article.article_dict["headline"], article.article_dict["shorttext"], article.article_dict["datetime"], ', '.join(article.article_dict["tags"]), article.article_analysis["word_count"], article.article_analysis["match_search_string_counter"]))
@@ -115,7 +123,12 @@ def main():
             db.execute("INSERT INTO test_3 (url, topline_label, topline, headline, shorttext, datetime, author, tags, word_count, matches, scraped_dt, department, categories) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", (db_row))
         except sqlite3.IntegrityError:
             print(f"The following URL is already in the database and will be skipped: {article.article_dict['link']}")
-            continue
+            pass
+
+        try:
+            db.execute("INSERT INTO test_4 (url, subheadlines, paragraphs, scraped_dt) VALUES (?, ?, ?, ?);", (article_content_row))
+        except sqlite3.IntegrityError:
+            pass
 
         # commit changes to db
         con.commit()
@@ -145,10 +158,15 @@ def main():
         # insert delay for article scraping
         """
 
+
+    pandas_db = pd.read_sql_query("SELECT * FROM test_3", con)
+    #print(pandas_db[["word_count", "matches", "datetime", "scraped_dt"]].head(20))
     # closure of db
     con.close()
     #print("+++")
 
+
+    
     # Using pandas to create dataframe
     #pd.set_option('display.max_columns', 1000)
     df = pd.DataFrame(archive.teaser_list)
@@ -280,7 +298,8 @@ class ScrapeArticle():
             return None
         else:
             for paragraph in paragraphs_raw:
-                paragraphs_list.append(paragraph.text)
+                # strip method removes blank lines after shorttext but also all paragraph indications
+                paragraphs_list.append(paragraph.text.strip())
             return paragraphs_list
 
 
