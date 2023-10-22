@@ -68,19 +68,15 @@ class ScrapeArticle():
 
     def get_topline_label(self):
         # find span-tag in which class entails 'label--small'
-        topline_label_raw = self.raw_article.find('span', class_=re.compile('label--small'))
+        seitenkopf = self.raw_article.find('div', class_=('seitenkopf'))
+        topline_label_raw = seitenkopf.find('span', class_=re.compile('label--small'))
         try:
-            return topline_label_raw.strong.text.strip()
+            return topline_label_raw.strong.text.strip().lower()
         except AttributeError:
             try:
-                return topline_label_raw.text.strip()
+                return topline_label_raw.text.strip().lower()
             except:
                 return None
-
-        if topline_label_raw == None:
-            return None
-        else:
-            return topline_label_raw.strong.text.strip()
 
 
     def get_shorttext(self):
@@ -144,7 +140,7 @@ class ScrapeArticle():
             return tags_list
         else:
             for tag in tag_link_list_raw:
-                tags_list.append(tag.text.strip())
+                tags_list.append(tag.text.strip().lower())
             return tags_list
         
     
@@ -225,7 +221,7 @@ class ScrapeArchive():
         if topline_label_raw == None:
             return None
         else:
-            return topline_label_raw.strong.text.strip()
+            return topline_label_raw.strong.text.strip().lower()
 
 
     def get_topline(self, teaser):
