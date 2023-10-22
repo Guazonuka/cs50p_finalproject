@@ -1,3 +1,4 @@
+import calendar
 import pandas as pd
 import requests
 import re
@@ -5,11 +6,92 @@ import sqlite3
 import time
 
 from bs4 import BeautifulSoup
-from datetime import datetime as dt
-
+#from datetime import datetime as dt
+import datetime as dt
 
 def main():
-    # Url
+    # Search string
+    search_string = "klima"
+
+    # Select year and month
+    year = 2023
+    month = 9
+
+    num_days = calendar.monthrange(year, month)[1]
+    days = [dt.date(year, month, day) for day in range(1, num_days+1)]
+
+    # Implementing Sqlite3
+    con = sqlite3.connect("tagesschau.db")
+    db = con.cursor()
+
+    for day in days:
+        # Create day string
+        date = dt.datetime.strftime(day, '%Y-%m-%d')
+        # Create URL
+        archive_url = "https://www.tagesschau.de/archiv"
+        url_extention = "?datum="
+        url = archive_url+url_extention+date
+
+        # Request url and get bs4soup
+        r = requests.get(url)
+        if r.status_code != 200:
+            raise ValueError
+        soup = BeautifulSoup(r.text, 'html.parser')   
+
+        # Running archiveScraper
+        archive = ScrapeArchive(soup, date, search_string)
+
+        # Using articleScraper
+        for teaser in archive.teaser_list[0:20]:
+            article_url = teaser["link"]
+            a = requests.get(article_url)
+            soup = BeautifulSoup(a.text, 'html.parser')
+            article = ScrapeArticle(article_url, soup, search_string)
+            db_row = [
+                article.article_dict["link"],
+                article.article_dict["topline_label"],
+                article.article_dict["topline"],
+                article.article_dict["headline"],
+                article.article_dict["shorttext"],
+                article.article_dict["datetime"],
+                article.article_dict["author"],
+                ', '.join(article.article_dict["tags"]),
+                article.article_analysis["word_count"],
+                article.article_analysis["match_search_string_counter"],
+                article.article_dict["scraped_dt"],
+                article.article_dict["department"],
+                ', '.join(article.article_dict["categories"]),
+            ]
+
+            article_content_row = [
+                article.article_dict["link"],
+                ' | '.join(article.article_dict["subheadlines"]),
+                ' '.join(article.article_dict["paragraphs"]),
+                article.article_dict["scraped_dt"],
+            ]
+
+            try:
+                db.execute("INSERT INTO test_3 (url, topline_label, topline, headline, shorttext, datetime, author, tags, word_count, matches, scraped_dt, department, categories) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", (db_row))
+            except sqlite3.IntegrityError:
+                print(f"The following URL is already in the database and will be skipped: {article.article_dict['link']}")
+                pass
+
+            try:
+                db.execute("INSERT INTO test_4 (url, subheadlines, paragraphs, scraped_dt) VALUES (?, ?, ?, ?);", (article_content_row))
+            except sqlite3.IntegrityError:
+                pass
+
+            # commit changes to db
+            con.commit()
+
+            # sleep counter of 1 second
+            time.sleep(1)
+
+    con.close()
+
+
+
+
     archive_url = "https://www.tagesschau.de/archiv"
     url_extention = "?datum="
     date = "2023-08-06"
@@ -42,7 +124,7 @@ def main():
             print(type(teaser["datetime"]))
     #print(archive)
     """
-
+    """
     # Using articleScraper
     for teaser in archive.teaser_list[0:20]:
         article_url = teaser["link"]
@@ -77,7 +159,7 @@ def main():
         #print(article_content_row[0])
         #print(article_content_row[2])
 
-        """
+        #
         self.article_dict = {
             "link": self.url,
             "topline_label": self.get_topline_label(),
@@ -91,7 +173,7 @@ def main():
             "tags": self.get_tags(),
             "hash": "",
         }
-        """
+        #
         
         # Creation of archive table
         #CREATE TABLE IF NOT EXISTS articles_short (url VARCHAR, topline_label TEXT, topline TEXT, headline TEXT, shorttext TEXT, datetime NUMERIC, tags TEXT, word_count INTEGER, matches INTEGER);
@@ -136,13 +218,13 @@ def main():
         # sleep counter of 1 second
         time.sleep(1)
 
-        """
+        #
         for s in article.article_dict:
             print(s, type(article.article_dict[s]))
         for s in article.article_analysis:
             print(s, type(article.article_analysis[s]))
-        """
-        """
+        #
+    
         #print(article.article_dict["subheadlines"])
         if article.article_analysis["match_search_string_counter"] > 0:
             print("+++")
@@ -156,7 +238,7 @@ def main():
             print(type(article.article_analysis["word_count"]))
             print(article)
         # insert delay for article scraping
-        """
+    """    
 
 
     pandas_db = pd.read_sql_query("SELECT * FROM test_3", con)
@@ -177,7 +259,7 @@ def main():
     #print(df.columns)
     #print(df[["topline_label", "headline", "datetime"]].head(20))
     #print(df.loc[0, "shorttext"])
-
+    
 
 
 
@@ -268,7 +350,7 @@ class ScrapeArticle():
             return None
         else:
             datetime_str = datetime_raw.text.strip("Stand: ").strip(" Uhr")
-            datetime = dt.strptime(datetime_str, "%d.%m.%Y %H:%M")
+            datetime = dt.datetime.strptime(datetime_str, "%d.%m.%Y %H:%M")
             return datetime
 
 
@@ -429,7 +511,7 @@ class ScrapeArchive():
             return None
         else:
             datetime_str = datetime_raw.text.strip(" Uhr")
-            datetime = dt.strptime(datetime_str, "%d.%m.%Y • %H:%M")
+            datetime = dt.datetime.strptime(datetime_str, "%d.%m.%Y • %H:%M")
             return datetime  
 
 
