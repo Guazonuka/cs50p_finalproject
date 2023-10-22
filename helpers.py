@@ -69,6 +69,14 @@ class ScrapeArticle():
     def get_topline_label(self):
         # find span-tag in which class entails 'label--small'
         topline_label_raw = self.raw_article.find('span', class_=re.compile('label--small'))
+        try:
+            return topline_label_raw.strong.text.strip()
+        except AttributeError:
+            try:
+                return topline_label_raw.text.strip()
+            except:
+                return None
+
         if topline_label_raw == None:
             return None
         else:
@@ -77,10 +85,13 @@ class ScrapeArticle():
 
     def get_shorttext(self):
         shorttext_raw = self.raw_article.find('p', class_=re.compile('^textabsatz'))
-        if shorttext_raw == None:
-            return None
-        else:
+        try:
             return shorttext_raw.strong.text.strip()
+        except AttributeError:
+            try:
+                return shorttext_raw.text.strip()
+            except:
+                return None
 
 
     def get_datetime(self):
@@ -126,10 +137,11 @@ class ScrapeArticle():
 
     def get_tags(self):
         taglist_raw = self.raw_article.find('ul', class_='taglist')
-        tag_link_list_raw = taglist_raw.find_all('a')
         tags_list = []
-        if tag_link_list_raw == None:
-            return None
+        try:
+            tag_link_list_raw = taglist_raw.find_all('a')
+        except:
+            return tags_list
         else:
             for tag in tag_link_list_raw:
                 tags_list.append(tag.text.strip())
@@ -201,7 +213,7 @@ class ScrapeArchive():
 
     def get_link(self, teaser):
         link = teaser.get('href')
-        if link.startswith("https://"):
+        if re.search("^https?://", link):
             return link
         else:
             return "https://www.tagesschau.de"+link
