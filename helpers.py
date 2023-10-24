@@ -10,11 +10,14 @@ class ScrapeArticle():
         self.search_string = search_string
         # Raw HTML
         self.raw_article = self.soup.find('article')
+        self.raw_seitenkopf = self.raw_article.find('div', class_='seitenkopf')
         self.article_dict = {
             "link": self.url,
             "topline_label": self.get_topline_label(),
-            "topline": self.raw_article.find('span', class_='seitenkopf__topline').text.strip(),
-            "headline": self.raw_article.find('span', class_='seitenkopf__headline--text').text.strip(),
+            #"topline": self.raw_article.find('span', class_='seitenkopf__topline').text.strip(),
+            "topline": self.raw_seitenkopf.find(class_='seitenkopf__topline').text.strip(),
+            #"headline": self.raw_article.find('span', class_='seitenkopf__headline--text').text.strip(),
+            "headline": self.raw_seitenkopf.find(class_='seitenkopf__headline--text').text.strip(),
             "shorttext": self.get_shorttext(),
             "datetime": self.get_datetime(),
             "author": "", #self.get_author(),
@@ -68,8 +71,8 @@ class ScrapeArticle():
 
     def get_topline_label(self):
         # find span-tag in which class entails 'label--small'
-        seitenkopf = self.raw_article.find('div', class_=('seitenkopf'))
-        topline_label_raw = seitenkopf.find('span', class_=re.compile('label--small'))
+        #seitenkopf = self.raw_article.find('div', class_=('seitenkopf'))
+        topline_label_raw = self.raw_seitenkopf.find('span', class_=re.compile('label--small'))
         try:
             return topline_label_raw.strong.text.strip().lower()
         except AttributeError:
@@ -91,9 +94,10 @@ class ScrapeArticle():
 
 
     def get_datetime(self):
-        datetime_raw = self.raw_article.find('p', class_='metatextline')
-        if datetime_raw == None:
-            return None
+        #datetime_raw = self.raw_article.find('p', class_='metatextline')
+        datetime_raw = self.raw_seitenkopf.find(class_='metatextline')
+        if datetime_raw == None:  
+            return None       
         else:
             datetime_str = datetime_raw.text.strip("Stand: ").strip(" Uhr")
             datetime = dt.datetime.strptime(datetime_str, "%d.%m.%Y %H:%M")
