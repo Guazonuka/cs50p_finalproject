@@ -50,18 +50,23 @@ In essence the program executes the following steps:
 * each word will be counted
 * each search_string match will be counted
 * additonal meta information such as news department, labels and tags will be scraped
-* the scraped data will be inserted into the two database tables - one row for each article
+* the scraped data will be inserted into the two database tables - one dataset per article
 
 #### test_project.py
-
+The test file checks for the expected output of the three functions used at the start of the app:
+* check_start_date()
+* check_end_date()
+* create_date_list()
 
 #### database
 The default sqlite3 database to connect to is called "test.db" in the project directory.
-
+The primary key for both tables are the url for each dataset.
 
 ## Challenges
+* Not all Articles in the same format
+ * some are videos or podcasts
+* HTML Syntax may vary
 
 ## Possible improvements for future versions
-
 * use a GUI
 * updating analysis
