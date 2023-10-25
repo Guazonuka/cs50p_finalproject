@@ -1,0 +1,7 @@
+bs4
+datetime
+re
+requests
+sqlite3
+sys
+time
