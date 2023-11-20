@@ -11,7 +11,7 @@ from helpers import ScrapeArchive, ScrapeArticle
 
 def main():
     search_string = "klima"
-    
+
     year = 2023
 
     # Implementing Sqlite3
@@ -40,11 +40,11 @@ def main():
     r = requests.get(url)
     if r.status_code != 200:
         raise ValueError
-    soup = BeautifulSoup(r.text, 'html.parser')   
+    soup = BeautifulSoup(r.text, 'html.parser')
 
     # Running archiveScraper
     archive = ScrapeArchive(soup, date, search_string)
-    
+
     # List for links not used in analysis
     unused_links = []
 
@@ -89,7 +89,7 @@ def main():
         print(f"The following link is not a Tagesschau original and was not analyzed")
         for link in unused_links:
             print(link)
-    
+
 
 if __name__ == "__main__":
     main()
